@@ -25,7 +25,7 @@ def seed_tables():
             is_admin=True
         ),
         User(
-            name="User1",
+            name="User 1",
             email="user1@email.com",
             password=bcrypt.generate_password_hash("123456").decode("utf-8")
         )
