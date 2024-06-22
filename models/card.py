@@ -23,6 +23,7 @@ class CardSchema(ma.Schema):
 
     class Meta:
         fields = ( "id", "title", "description", "date", "status", "priority", "user", "comments" )
+        ordered = True
 
 
 card_schema = CardSchema()
