@@ -3,10 +3,10 @@ from datetime import timedelta
 from flask import Blueprint, request
 from sqlalchemy.exc import IntegrityError
 from psycopg2 import errorcodes
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 from init import bcrypt, db
-from models.user import User, user_schema
+from models.user import User, user_schema, UserSchema
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -14,7 +14,7 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 def register_user():
     try:
         # get data from the body of the request
-        body_data = request.get_json()
+        body_data = UserSchema().load(request.get_json())
         # create an instance of the User model
         user = User(
             name=body_data.get("name"),
@@ -56,3 +56,28 @@ def login_user():
     else:
         # respond back with error
         return {"error": "Invalid email or password"}, 401
+    
+# /auth/users/user_id
+@auth_bp.route("/users", methods=["PUT", "PATCH"])
+@jwt_required()
+def update_user():
+    # get fields from body of request
+    body_data = UserSchema().load(request.get_json(), partial=True)
+    password = body_data.get("password")
+    # fetch the user from the database
+    stmt = db.select(User).filter_by(id=get_jwt_identity())
+    user = db.session.scalar(stmt)
+    # if user exists
+    if user:
+        # update the fields
+        user.name = body_data.get("name") or user.name
+        if password:
+            user.password = bcrypt.generate_password_hash(password).decode("utf-8")
+        # commit to the db
+        db.session.commit()
+        # return a response
+        return user_schema.dump(user)
+    # else
+    else:
+        # return an error
+        return {"error": f"{user} does not exist"}
