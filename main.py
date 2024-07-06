@@ -22,6 +22,14 @@ def create_app():
     @app.errorhandler(ValidationError)
     def validation_error(err):
         return {"error": err.messages}, 400
+    
+    @app.errorhandler(400)
+    def bed_request(err):
+        return {"error": err.messages}, 400
+    
+    @app.errorhandler(401)
+    def unauthenticated():
+        return {"error": "You are not authenticted"}, 401
 
     # Uses flasks 'Blueprint' to create controllers in different file
     from controllers.cli_controller import db_commands
